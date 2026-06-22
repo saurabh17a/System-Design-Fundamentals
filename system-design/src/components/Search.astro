@@ -1,0 +1,58 @@
+---
+// Pagefind static search. The index is generated at build time (`postbuild`
+// script) into `dist/pagefind/`, so search is live in `build`/`preview` and on the
+// deployed site. In `astro dev` the assets 404 and the box stays inert — expected.
+import { withBase } from '../lib/docs';
+const base = withBase(''); // ends with '/'
+---
+
+<div id="search" class="search"></div>
+<link rel="stylesheet" href={`${base}pagefind/pagefind-ui.css`} />
+
+<script is:inline define:vars={{ base }}>
+	window.addEventListener('DOMContentLoaded', () => {
+		const script = document.createElement('script');
+		script.src = `${base}pagefind/pagefind-ui.js`;
+		script.onload = () => {
+			// eslint-disable-next-line no-new, no-undef
+			new PagefindUI({
+				element: '#search',
+				bundlePath: `${base}pagefind/`,
+				showSubResults: true,
+				showImages: false,
+			});
+		};
+		script.onerror = () => {
+			document.getElementById('search')?.setAttribute('data-unavailable', 'true');
+		};
+		document.head.appendChild(script);
+	});
+</script>
+
+<style>
+	.search {
+		flex: 1;
+		max-width: 22rem;
+	}
+	/* Pagefind UI custom properties — match the site accent. */
+	.search {
+		--pagefind-ui-primary: var(--accent);
+		--pagefind-ui-text: rgb(var(--gray-dark));
+		--pagefind-ui-background: #fff;
+		--pagefind-ui-border: rgb(var(--gray-light));
+		--pagefind-ui-border-width: 1px;
+		--pagefind-ui-border-radius: 8px;
+		--pagefind-ui-font: var(--font-atkinson);
+		--pagefind-ui-scale: 0.78;
+	}
+	.search[data-unavailable]::after {
+		content: 'Search available on the built site';
+		font-size: 0.75rem;
+		color: rgb(var(--gray));
+	}
+	@media (max-width: 720px) {
+		.search {
+			display: none;
+		}
+	}
+</style>

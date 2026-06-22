@@ -1,0 +1,69 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+	headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+// Show H2/H3 only; the H1 is the page title rendered in the body.
+const items = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+---
+
+{
+	items.length > 0 && (
+		<aside class="toc">
+			<p class="toc-title">On this page</p>
+			<ul>
+				{items.map((h) => (
+					<li class={`lvl-${h.depth}`}>
+						<a href={`#${h.slug}`}>{h.text}</a>
+					</li>
+				))}
+			</ul>
+		</aside>
+	)
+}
+
+<style>
+	.toc {
+		position: sticky;
+		top: 60px;
+		align-self: start;
+		max-height: calc(100vh - 60px);
+		overflow-y: auto;
+		padding: 1.5rem 0.5rem;
+		font-size: 0.85rem;
+	}
+	.toc-title {
+		margin: 0 0 0.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: rgb(var(--gray));
+	}
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		border-left: 1px solid rgb(var(--gray-light));
+	}
+	li a {
+		display: block;
+		padding: 0.2rem 0 0.2rem 0.75rem;
+		margin-left: -1px;
+		border-left: 2px solid transparent;
+		color: rgb(var(--gray));
+		text-decoration: none;
+		line-height: 1.35;
+	}
+	li.lvl-3 a {
+		padding-left: 1.5rem;
+		font-size: 0.8rem;
+	}
+	li a:hover {
+		color: var(--accent);
+		border-left-color: var(--accent);
+	}
+</style>

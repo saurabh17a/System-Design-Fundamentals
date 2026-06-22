@@ -1,0 +1,220 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { docHref, getNav } from '../lib/docs';
+
+const { groups, ordered } = await getNav();
+
+const META: Record<string, { emoji: string; blurb: string }> = {
+	foundations: {
+		emoji: '🧱',
+		blurb: 'Programming in Python & Go, the four pillars of OOP, SOLID principles, and the core design patterns.',
+	},
+	lld: {
+		emoji: '🧩',
+		blurb: 'Object-oriented design problems — each classic worked in both Python and Go.',
+	},
+	machinecoding: {
+		emoji: '⚙️',
+		blurb: 'Data structures and concurrency primitives implemented from scratch.',
+	},
+	hld: {
+		emoji: '🏛️',
+		blurb: 'End-to-end, interview-grade system designs — from URL shorteners to payment systems.',
+	},
+};
+
+const cards = groups.map((group) => {
+	const count = ordered.filter((d) => d.segments[0] === group.key).length;
+	const first = ordered.find((d) => d.segments[0] === group.key);
+	const subAreas = group.groups.map((g) => g.label);
+	return {
+		key: group.key,
+		label: group.label,
+		count,
+		href: first ? docHref(first.id) : '#',
+		subAreas,
+		...(META[group.key] ?? { emoji: '📄', blurb: '' }),
+	};
+});
+
+const startHref = cards[0]?.href ?? '#';
+const hldCard = cards.find((c) => c.key === 'hld');
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="hero">
+				<p class="eyebrow">{ordered.length} curated docs · Python &amp; Go</p>
+				<h1>System Design,<br />from fundamentals to scale.</h1>
+				<p class="lead">{SITE_DESCRIPTION}</p>
+				<div class="cta">
+					<a class="btn primary" href={startHref}>Start with Foundations</a>
+					{hldCard && <a class="btn" href={hldCard.href}>Browse System Designs</a>}
+				</div>
+			</section>
+
+			<section class="grid">
+				{
+					cards.map((card) => (
+						<a class="card" href={card.href}>
+							<div class="card-top">
+								<span class="emoji">{card.emoji}</span>
+								<span class="badge">{card.count}</span>
+							</div>
+							<h2>{card.label}</h2>
+							<p>{card.blurb}</p>
+							{card.subAreas.length > 0 && (
+								<ul class="tags">
+									{card.subAreas.map((s) => (
+										<li>{s}</li>
+									))}
+								</ul>
+							)}
+						</a>
+					))
+				}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	main {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 0 1.25rem 4rem;
+	}
+	.hero {
+		padding: 4.5rem 0 3.5rem;
+		text-align: center;
+	}
+	.eyebrow {
+		margin: 0 0 1rem;
+		font-size: 0.85rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+	.hero h1 {
+		margin: 0 0 1rem;
+		font-size: clamp(2.4rem, 6vw, 4rem);
+		line-height: 1.05;
+		background: linear-gradient(135deg, rgb(var(--black)), var(--accent));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	.lead {
+		max-width: 640px;
+		margin: 0 auto 2rem;
+		font-size: 1.1rem;
+		color: rgb(var(--gray-dark));
+	}
+	.cta {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	.btn {
+		display: inline-block;
+		padding: 0.7rem 1.4rem;
+		border-radius: 10px;
+		border: 1px solid rgb(var(--gray-light));
+		font-weight: 600;
+		text-decoration: none;
+		color: rgb(var(--black));
+		background: #fff;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+	.btn:hover {
+		border-color: var(--accent);
+	}
+	.btn.primary {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #fff;
+	}
+	.btn.primary:hover {
+		background: var(--accent-dark);
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1.25rem;
+	}
+	.card {
+		display: block;
+		padding: 1.5rem;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 16px;
+		background: #fff;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.card:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--box-shadow);
+		border-color: var(--accent);
+	}
+	.card-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+	.emoji {
+		font-size: 1.8rem;
+	}
+	.badge {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--accent);
+		background: rgba(var(--gray-light), 0.7);
+		padding: 0.15rem 0.6rem;
+		border-radius: 999px;
+	}
+	.card h2 {
+		margin: 0 0 0.4rem;
+		font-size: 1.3rem;
+	}
+	.card p {
+		margin: 0 0 1rem;
+		font-size: 0.95rem;
+		color: rgb(var(--gray-dark));
+		line-height: 1.5;
+	}
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.tags li {
+		font-size: 0.75rem;
+		color: rgb(var(--gray-dark));
+		background: rgba(var(--gray-light), 0.6);
+		padding: 0.2rem 0.55rem;
+		border-radius: 6px;
+	}
+</style>

@@ -1,0 +1,30 @@
+---
+import { GITHUB_URL, SITE_TITLE } from '../consts';
+const today = new Date();
+---
+
+<footer>
+	<p>
+		{SITE_TITLE} &middot; &copy; {today.getFullYear()} &middot;
+		<a href={GITHUB_URL} target="_blank" rel="noopener">Source on GitHub</a>
+	</p>
+	<p class="built">Built with Astro.</p>
+</footer>
+<style>
+	footer {
+		padding: 2.5em 1em 3em;
+		color: rgb(var(--gray));
+		text-align: center;
+		border-top: 1px solid rgb(var(--gray-light));
+	}
+	footer p {
+		margin: 0.25em 0;
+		font-size: 0.95rem;
+	}
+	footer a {
+		color: rgb(var(--gray-dark));
+	}
+	.built {
+		font-size: 0.8rem;
+	}
+</style>

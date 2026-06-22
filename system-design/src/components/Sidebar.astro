@@ -1,0 +1,95 @@
+---
+import { getNav, withBase } from '../lib/docs';
+import SidebarGroup from './SidebarGroup.astro';
+
+interface Props {
+	currentId?: string;
+}
+
+const { currentId = '' } = Astro.props;
+const { groups, ordered } = await getNav();
+const base = withBase('');
+---
+
+<aside class="sidebar" id="sidebar">
+	<nav aria-label="Documentation">
+		<a class:list={['home', { active: !currentId }]} href={base}>Home</a>
+		{groups.map((group) => <SidebarGroup group={group} currentId={currentId} depth={0} />)}
+		<p class="count">{ordered.length} docs</p>
+	</nav>
+</aside>
+
+<div class="scrim" id="sidebar-scrim"></div>
+
+<script is:inline>
+	(() => {
+		const close = () => document.body.classList.remove('nav-open');
+		document.getElementById('sidebar-scrim')?.addEventListener('click', close);
+		// Close the mobile drawer after navigating.
+		document.querySelectorAll('#sidebar a').forEach((a) => a.addEventListener('click', close));
+	})();
+</script>
+
+<style>
+	.sidebar {
+		position: sticky;
+		top: 60px;
+		align-self: start;
+		height: calc(100vh - 60px);
+		overflow-y: auto;
+		padding: 1.25rem 0.75rem 3rem;
+		border-right: 1px solid rgb(var(--gray-light));
+	}
+	nav {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.home {
+		padding: 0.3rem 0.6rem;
+		border-radius: 6px;
+		font-weight: 700;
+		font-size: 0.9rem;
+		color: rgb(var(--gray-dark));
+		text-decoration: none;
+	}
+	.home:hover {
+		background: rgb(var(--gray-light));
+	}
+	.home.active {
+		color: var(--accent);
+	}
+	.count {
+		margin: 1rem 0.6rem 0;
+		font-size: 0.75rem;
+		color: rgb(var(--gray));
+	}
+	.scrim {
+		display: none;
+	}
+
+	@media (max-width: 980px) {
+		.sidebar {
+			position: fixed;
+			top: 60px;
+			left: 0;
+			z-index: 40;
+			width: 290px;
+			max-width: 85vw;
+			background: #fff;
+			transform: translateX(-100%);
+			transition: transform 0.2s ease;
+			box-shadow: var(--box-shadow);
+		}
+		:global(body.nav-open) .sidebar {
+			transform: translateX(0);
+		}
+		:global(body.nav-open) .scrim {
+			display: block;
+			position: fixed;
+			inset: 60px 0 0 0;
+			z-index: 30;
+			background: rgba(var(--black), 0.35);
+		}
+	}
+</style>

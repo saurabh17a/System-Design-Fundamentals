@@ -1,0 +1,104 @@
+---
+import type { NavGroup } from '../lib/docs';
+import { docHref, groupContainsId } from '../lib/docs';
+
+interface Props {
+	group: NavGroup;
+	currentId: string;
+	depth?: number;
+}
+
+const { group, currentId, depth = 0 } = Astro.props;
+const containsCurrent = currentId ? groupContainsId(group, currentId) : false;
+// Top-level groups open by default; nested groups open only on the active page's path.
+const open = containsCurrent || (!currentId && depth === 0);
+---
+
+<details class="group" open={open} data-depth={depth}>
+	<summary>{group.label}</summary>
+	<div class="children">
+		{group.groups.map((sub) => <Astro.self group={sub} currentId={currentId} depth={depth + 1} />)}
+		{
+			group.docs.length > 0 && (
+				<ul>
+					{group.docs.map((doc) => (
+						<li>
+							<a
+								href={docHref(doc.id)}
+								class:list={['doc', { active: doc.id === currentId }]}
+								aria-current={doc.id === currentId ? 'page' : undefined}
+							>
+								{doc.label}
+							</a>
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</div>
+</details>
+
+<style>
+	.group {
+		margin: 0;
+	}
+	summary {
+		list-style: none;
+		cursor: pointer;
+		padding: 0.3rem 0.5rem;
+		border-radius: 6px;
+		font-weight: 700;
+		font-size: 0.9rem;
+		color: rgb(var(--black));
+		user-select: none;
+	}
+	.group[data-depth='0'] > summary {
+		margin-top: 0.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		font-size: 0.78rem;
+		color: rgb(var(--gray));
+	}
+	summary::-webkit-details-marker {
+		display: none;
+	}
+	summary::before {
+		content: '▸';
+		display: inline-block;
+		width: 1em;
+		font-size: 0.7em;
+		color: rgb(var(--gray));
+		transition: transform 0.15s ease;
+	}
+	.group[open] > summary::before {
+		transform: rotate(90deg);
+	}
+	.children {
+		margin-left: 0.55rem;
+		padding-left: 0.5rem;
+		border-left: 1px solid rgb(var(--gray-light));
+	}
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	a.doc {
+		display: block;
+		padding: 0.28rem 0.6rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		line-height: 1.3;
+		color: rgb(var(--gray-dark));
+		text-decoration: none;
+	}
+	a.doc:hover {
+		background: rgb(var(--gray-light));
+		color: rgb(var(--black));
+	}
+	a.doc.active {
+		background: var(--accent);
+		color: #fff;
+		font-weight: 600;
+	}
+</style>
