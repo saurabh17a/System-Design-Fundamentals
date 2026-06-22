@@ -1,22 +1,47 @@
 site_name: System Design Fundamentals
-site_description: A comprehensive guide to system design principles and best practices.
+site_url: https://saurabh17a.github.io/System-Design-Fundamentals/
+
 theme:
   name: material
+  # Customization for a high-end UI feel
+  features:
+    - navigation.tabs          # Top horizontal navigation bar
+    - navigation.sections      # Group sidebar items cleanly
+    - navigation.top           # "Back to top" button
+    - search.suggest           # Smart search suggestions
+    - search.highlight         # Highlight searched keywords
+    - code.annotate            # Allows adding explanations on code lines
   palette:
-    # Palette toggle for light mode
+    # Auto-switching dark/light mode based on device system settings
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: indigo          # Clean accent color
+      accent: indigo
       toggle:
         icon: material/brightness-7 
         name: Switch to dark mode
-    # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
 
+# 1. REMOVE THE "Made with Material for MkDocs" FOOTER TEXT
+extra:
+  generator: false             # This hides the default branding text completely
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/saurabh17a
+
+# Add professional code-block rendering for your Go and Python code
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences       # Allows beautiful code nesting
+  - pymdownx.inlinehilite      # Syntax highlighting for inline code snippets
+  - toc:
+      permalink: true          # Puts an anchor link next to each Markdown title
