@@ -1,58 +1,238 @@
 ---
-// Pagefind static search. The index is generated at build time (`postbuild`
-// script) into `dist/pagefind/`, so search is live in `build`/`preview` and on the
-// deployed site. In `astro dev` the assets 404 and the box stays inert — expected.
+// Pagefind static search, presented as a modal triggered from the header. The
+// index is generated at build time (`postbuild`) into `dist/pagefind/`, so search
+// works in `build`/`preview` and on the deployed site. In `astro dev` the assets
+// 404 and the modal shows a friendly notice instead.
 import { withBase } from '../lib/docs';
 const base = withBase(''); // ends with '/'
 ---
 
-<div id="search" class="search"></div>
+<button id="search-open" class="search-trigger" type="button" aria-label="Search docs">
+	<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+		<path
+			fill="currentColor"
+			d="M11.74 10.34A6 6 0 1 0 10.34 11.74l3.2 3.2a1 1 0 0 0 1.42-1.42l-3.2-3.18ZM2 6.5a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0Z"
+		></path>
+	</svg>
+	<span class="label">Search</span>
+	<kbd>⌘K</kbd>
+</button>
+
+<div id="search-modal" class="search-modal" hidden>
+	<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+		<div id="search"></div>
+		<p class="search-hint">
+			<kbd>↵</kbd> to select · <kbd>esc</kbd> to close
+		</p>
+	</div>
+</div>
+
 <link rel="stylesheet" href={`${base}pagefind/pagefind-ui.css`} />
 
 <script is:inline define:vars={{ base }}>
-	window.addEventListener('DOMContentLoaded', () => {
-		const script = document.createElement('script');
-		script.src = `${base}pagefind/pagefind-ui.js`;
-		script.onload = () => {
-			// eslint-disable-next-line no-new, no-undef
-			new PagefindUI({
-				element: '#search',
-				bundlePath: `${base}pagefind/`,
-				showSubResults: true,
-				showImages: false,
-			});
+	(() => {
+		const trigger = document.getElementById('search-open');
+		const modal = document.getElementById('search-modal');
+		const mount = document.getElementById('search');
+		if (!trigger || !modal || !mount) return;
+
+		let inited = false;
+		function initPagefind() {
+			if (inited) return;
+			inited = true;
+			const script = document.createElement('script');
+			script.src = `${base}pagefind/pagefind-ui.js`;
+			script.onload = () => {
+				// eslint-disable-next-line no-undef
+				new PagefindUI({
+					element: '#search',
+					bundlePath: `${base}pagefind/`,
+					showSubResults: false,
+					showImages: false,
+					excerptLength: 0,
+					resetStyles: false,
+				});
+			};
+			script.onerror = () => {
+				mount.innerHTML =
+					'<p class="search-fallback">Search is generated at build time — run <code>npm run build</code> or open the deployed site.</p>';
+			};
+			document.head.appendChild(script);
+		}
+
+		const open = () => {
+			modal.hidden = false;
+			document.body.classList.add('search-open');
+			initPagefind();
+			setTimeout(() => modal.querySelector('input')?.focus(), 60);
 		};
-		script.onerror = () => {
-			document.getElementById('search')?.setAttribute('data-unavailable', 'true');
+		const close = () => {
+			modal.hidden = true;
+			document.body.classList.remove('search-open');
 		};
-		document.head.appendChild(script);
-	});
+
+		trigger.addEventListener('click', open);
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) close();
+		});
+		document.addEventListener('keydown', (e) => {
+			const typing = /^(input|textarea|select)$/i.test(document.activeElement?.tagName || '');
+			if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) {
+				e.preventDefault();
+				open();
+			}
+			if (e.key === 'Escape' && !modal.hidden) close();
+		});
+	})();
 </script>
 
 <style>
-	.search {
-		flex: 1;
-		max-width: 22rem;
+	.search-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.4rem 0.7rem;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 9px;
+		background: rgba(var(--gray-light), 0.35);
+		color: rgb(var(--gray));
+		font: inherit;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: border-color 0.15s ease;
 	}
-	/* Pagefind UI custom properties — match the site accent. */
-	.search {
+	.search-trigger:hover {
+		border-color: var(--accent);
+		color: rgb(var(--gray-dark));
+	}
+	.search-trigger .label {
+		min-width: 4.5rem;
+		text-align: left;
+	}
+	.search-trigger kbd {
+		font-family: inherit;
+		font-size: 0.72rem;
+		padding: 0.1rem 0.35rem;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 5px;
+		background: var(--surface);
+		color: rgb(var(--gray));
+	}
+
+	.search-modal {
+		position: fixed;
+		/* Below the 60px sticky header; transparent backdrop so nothing behind
+		   changes colour — only the floating panel appears. */
+		inset: 60px 0 0 0;
+		z-index: 40;
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		padding: 6vh 1rem 1rem;
+		background: transparent;
+	}
+	.search-modal[hidden] {
+		display: none;
+	}
+	.search-panel {
+		width: 100%;
+		max-width: 640px;
+		max-height: 75vh;
+		overflow: auto;
+		padding: 1rem;
+		background: var(--surface);
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 14px;
+		box-shadow:
+			0 4px 12px rgba(0, 0, 0, 0.15),
+			0 16px 48px rgba(0, 0, 0, 0.25);
+
 		--pagefind-ui-primary: var(--accent);
 		--pagefind-ui-text: rgb(var(--gray-dark));
-		--pagefind-ui-background: #fff;
+		--pagefind-ui-background: var(--surface);
 		--pagefind-ui-border: rgb(var(--gray-light));
 		--pagefind-ui-border-width: 1px;
-		--pagefind-ui-border-radius: 8px;
+		--pagefind-ui-border-radius: 9px;
 		--pagefind-ui-font: var(--font-atkinson);
-		--pagefind-ui-scale: 0.78;
+		--pagefind-ui-scale: 0.9;
 	}
-	.search[data-unavailable]::after {
-		content: 'Search available on the built site';
+	.search-hint {
+		margin: 0.75rem 0 0.25rem;
+		text-align: center;
 		font-size: 0.75rem;
 		color: rgb(var(--gray));
 	}
+	.search-hint kbd {
+		font-family: inherit;
+		padding: 0.05rem 0.3rem;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 4px;
+	}
+	:global(.search-fallback) {
+		padding: 1rem;
+		color: rgb(var(--gray));
+		font-size: 0.9rem;
+	}
+
+	/* Pagefind UI is injected at runtime, so target it with :global. We want a
+	   clean list of page titles only — no excerpts or per-heading sub-results. */
+	:global(.pagefind-ui__result-excerpt),
+	:global(.pagefind-ui__result-nested),
+	:global(.pagefind-ui__result-tags) {
+		display: none !important;
+	}
+	:global(.pagefind-ui__result) {
+		padding-block: 0.5rem;
+	}
+	:global(.pagefind-ui__result-title) {
+		margin: 0;
+		font-size: 0.98rem;
+	}
+	/* Force readable input text/background in both themes (Pagefind defaults can
+	   leave light-on-white in dark mode). */
+	:global(.pagefind-ui__search-input) {
+		color: rgb(var(--black)) !important;
+		background-color: var(--surface) !important;
+	}
+	:global(.pagefind-ui__search-input::placeholder) {
+		color: rgb(var(--gray)) !important;
+	}
+	/* Clear button: replace the "Clear" text with a circular ✕ icon button. */
+	:global(.pagefind-ui__search-clear) {
+		font-size: 0 !important; /* hide the "Clear" label */
+		width: 1.9rem !important;
+		height: 1.9rem !important;
+		padding: 0 !important;
+		margin: auto 0.4rem !important;
+		border-radius: 50% !important;
+		background-color: transparent !important;
+		color: rgb(var(--gray)) !important;
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		cursor: pointer;
+		transition: background-color 0.15s ease, color 0.15s ease;
+	}
+	:global(.pagefind-ui__search-clear::after) {
+		content: '✕';
+		font-size: 0.9rem;
+		line-height: 1;
+	}
+	:global(.pagefind-ui__search-clear:hover) {
+		background-color: rgba(var(--gray-light), 0.9) !important;
+		color: rgb(var(--black)) !important;
+	}
+	:global(.pagefind-ui__result-title a) {
+		color: rgb(var(--black)) !important;
+	}
+
 	@media (max-width: 720px) {
-		.search {
+		.search-trigger .label,
+		.search-trigger kbd {
 			display: none;
+		}
+		.search-trigger {
+			min-width: 0;
 		}
 	}
 </style>

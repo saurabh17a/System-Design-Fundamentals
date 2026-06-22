@@ -3,25 +3,48 @@ import { GITHUB_URL, SITE_TITLE } from '../consts';
 import { withBase } from '../lib/docs';
 import Search from './Search.astro';
 
+interface Props {
+	hasSidebar?: boolean;
+}
+
+const { hasSidebar = false } = Astro.props;
 const home = withBase('');
 ---
 
 <header>
 	<nav>
-		<button class="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">
-			<svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
-				<path
-					fill="currentColor"
-					d="M1.5 3.5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Zm0 5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Zm0 5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Z"
-				></path>
-			</svg>
-		</button>
+		{
+			hasSidebar && (
+				<button class="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">
+					<svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
+						<path
+							fill="currentColor"
+							d="M1.5 3.5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Zm0 5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Zm0 5h13a.75.75 0 0 0 0-1.5h-13a.75.75 0 0 0 0 1.5Z"
+						/>
+					</svg>
+				</button>
+			)
+		}
 		<a class="brand" href={home}>
 			<span class="brand-mark">SD</span>
 			<span class="brand-text">{SITE_TITLE}</span>
 		</a>
 		<div class="spacer"></div>
 		<Search />
+		<button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark mode">
+			<svg class="sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+				<path
+					fill="currentColor"
+					d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0-5a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm0 17a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1ZM4.2 4.2a1 1 0 0 1 1.4 0l.7.7A1 1 0 0 1 4.9 6.3l-.7-.7a1 1 0 0 1 0-1.4Zm13.4 13.4a1 1 0 0 1 1.4 0l.7.7a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 0-1.4ZM2 12a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm17 0a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1ZM4.2 19.8a1 1 0 0 1 0-1.4l.7-.7a1 1 0 0 1 1.4 1.4l-.7.7a1 1 0 0 1-1.4 0ZM17.6 6.4a1 1 0 0 1 0-1.4l.7-.7a1 1 0 1 1 1.4 1.4l-.7.7a1 1 0 0 1-1.4 0Z"
+				></path>
+			</svg>
+			<svg class="moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+				<path
+					fill="currentColor"
+					d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
+				></path>
+			</svg>
+		</button>
 		<a class="gh" href={GITHUB_URL} target="_blank" rel="noopener" aria-label="View source on GitHub">
 			<svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true"
 				><path
@@ -39,7 +62,7 @@ const home = withBase('');
 		z-index: 50;
 		margin: 0;
 		padding: 0 1.25em;
-		background: rgba(255, 255, 255, 0.85);
+		background: color-mix(in srgb, var(--surface) 88%, transparent);
 		backdrop-filter: blur(8px);
 		border-bottom: 1px solid rgb(var(--gray-light));
 	}
@@ -87,9 +110,34 @@ const home = withBase('');
 		padding: 0.35rem;
 		border: 1px solid rgb(var(--gray-light));
 		border-radius: 8px;
-		background: #fff;
+		background: var(--surface);
 		color: rgb(var(--gray-dark));
 		cursor: pointer;
+	}
+	.icon-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.35rem;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		background: var(--surface);
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+	}
+	.icon-btn:hover {
+		color: var(--accent);
+		border-color: var(--accent);
+	}
+	/* Show moon in light mode (switch to dark), sun in dark mode. */
+	.icon-btn .sun {
+		display: none;
+	}
+	:global(html.dark) .icon-btn .sun {
+		display: block;
+	}
+	:global(html.dark) .icon-btn .moon {
+		display: none;
 	}
 	@media (max-width: 980px) {
 		.menu-toggle {
@@ -107,10 +155,19 @@ const home = withBase('');
 <script is:inline>
 	(() => {
 		const toggle = document.querySelector('.menu-toggle');
-		if (!toggle) return;
-		toggle.addEventListener('click', () => {
-			const open = document.body.classList.toggle('nav-open');
-			toggle.setAttribute('aria-expanded', String(open));
-		});
+		if (toggle) {
+			toggle.addEventListener('click', () => {
+				const open = document.body.classList.toggle('nav-open');
+				toggle.setAttribute('aria-expanded', String(open));
+			});
+		}
+
+		const theme = document.getElementById('theme-toggle');
+		if (theme) {
+			theme.addEventListener('click', () => {
+				const dark = document.documentElement.classList.toggle('dark');
+				localStorage.setItem('theme', dark ? 'dark' : 'light');
+			});
+		}
 	})();
 </script>

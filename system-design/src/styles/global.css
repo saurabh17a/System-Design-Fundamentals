@@ -10,10 +10,24 @@
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
 	--gray-dark: 34, 41, 57;
-	--gray-gradient: rgba(var(--gray-light), 50%), #fff;
+	--bg: #ffffff;
+	--surface: #ffffff;
 	--box-shadow:
 		0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
 		0 16px 32px rgba(var(--gray), 33%);
+}
+html.dark {
+	--accent: #7c8cff;
+	--accent-dark: #aab4ff;
+	--black: 233, 238, 247;
+	--gray: 138, 152, 184;
+	--gray-light: 42, 50, 68;
+	--gray-dark: 198, 206, 224;
+	--bg: #0d1117;
+	--surface: #161b22;
+}
+html {
+	color-scheme: light dark;
 }
 * {
 	box-sizing: border-box;
@@ -26,12 +40,13 @@ body {
 	margin: 0;
 	padding: 0;
 	text-align: left;
-	background: #fff;
+	background: var(--bg);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 	color: rgb(var(--gray-dark));
 	font-size: 18px;
 	line-height: 1.7;
+	transition: background-color 0.2s ease, color 0.2s ease;
 }
 h1,
 h2,
@@ -137,6 +152,16 @@ hr {
 }
 .prose thead th {
 	background: rgba(var(--gray-light), 0.5);
+}
+
+/* Activate the dark Shiki theme alongside `html.dark`. */
+html.dark .astro-code,
+html.dark .astro-code span {
+	color: var(--shiki-dark) !important;
+	background-color: var(--shiki-dark-bg) !important;
+	font-style: var(--shiki-dark-font-style) !important;
+	font-weight: var(--shiki-dark-font-weight) !important;
+	text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
 .sr-only {

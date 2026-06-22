@@ -15,7 +15,8 @@ export default defineConfig({
 	base,
 	integrations: [mdx(), sitemap()],
 	markdown: {
-		shikiConfig: { theme: 'one-dark-pro', wrap: false },
+		// Dual themes — activated by the `html.dark` class (see global.css).
+		shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' }, wrap: false },
 		// Rewrite relative `*.md` cross-links in the knowledge base to site routes.
 		rehypePlugins: [[rewriteMdLinks, { base }]],
 	},
