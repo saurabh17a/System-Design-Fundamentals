@@ -1,6 +1,6 @@
 ---
 import type { NavGroup } from '../lib/docs';
-import { docHref, groupContainsId } from '../lib/docs';
+import { docHref, groupContainsId, SECTION_META } from '../lib/docs';
 
 interface Props {
 	group: NavGroup;
@@ -12,17 +12,19 @@ const { group, currentId, depth = 0 } = Astro.props;
 const containsCurrent = currentId ? groupContainsId(group, currentId) : false;
 // Top-level groups open by default; nested groups open only on the active page's path.
 const open = containsCurrent || (!currentId && depth === 0);
+// Top-level sections get an emoji icon (kept in sync with the home-page cards).
+const emoji = depth === 0 ? SECTION_META[group.key]?.emoji : undefined;
 ---
 
-<details class="group" open={open} data-depth={depth}>
-	<summary>{group.label}</summary>
+<details class="group" open={open} data-depth={depth} data-key={group.key}>
+	<summary>{emoji && <span class="ico" aria-hidden="true">{emoji} </span>}{group.label}</summary>
 	<div class="children">
 		{group.groups.map((sub) => <Astro.self group={sub} currentId={currentId} depth={depth + 1} />)}
 		{
 			group.docs.length > 0 && (
 				<ul>
 					{group.docs.map((doc) => (
-						<li>
+						<li class="doc-item" data-difficulty={doc.difficulty.join(' ') || undefined}>
 							<a
 								href={docHref(doc.id)}
 								class:list={['doc', { active: doc.id === currentId }]}
@@ -58,6 +60,13 @@ const open = containsCurrent || (!currentId && depth === 0);
 		letter-spacing: 0.04em;
 		font-size: 0.78rem;
 		color: rgb(var(--gray));
+	}
+	.ico {
+		display: inline-block;
+		font-size: 0.95rem;
+		letter-spacing: normal;
+		text-transform: none;
+		vertical-align: -0.05em;
 	}
 	summary::-webkit-details-marker {
 		display: none;

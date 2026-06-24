@@ -1,0 +1,77 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import BrowseList from '../../components/BrowseList.astro';
+import DifficultyFilter from '../../components/DifficultyFilter.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { getCompanyIndex, withBase } from '../../lib/docs';
+
+export async function getStaticPaths() {
+	const companies = await getCompanyIndex();
+	return companies.map((group) => ({ params: { company: group.slug }, props: { group } }));
+}
+
+const { group } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={`${group.label} interview questions · System Design`}
+			description={`System design questions asked at ${group.label}.`}
+		/>
+	</head>
+	<body>
+		<Header />
+		<main class="browse-page">
+			<a class="back" href={withBase('companies')}>← All companies</a>
+			<header class="head">
+				<p class="kicker">Asked by</p>
+				<h1>{group.label}</h1>
+				<p class="sub">{group.docs.length} {group.docs.length === 1 ? 'question' : 'questions'}</p>
+			</header>
+			<DifficultyFilter />
+			<BrowseList docs={group.docs} />
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.browse-page {
+		max-width: 760px;
+		margin: 0 auto;
+		padding: 2.5rem clamp(1rem, 4vw, 2rem) 4rem;
+	}
+	.back {
+		display: inline-block;
+		margin-bottom: 1.5rem;
+		font-size: 0.85rem;
+		color: rgb(var(--gray));
+		text-decoration: none;
+	}
+	.back:hover {
+		color: var(--accent);
+	}
+	.head {
+		margin-bottom: 2rem;
+	}
+	.kicker {
+		margin: 0 0 0.2rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: rgb(var(--gray));
+	}
+	.head h1 {
+		margin: 0 0 0.3rem;
+		font-size: 2.2rem;
+	}
+	.head .sub {
+		margin: 0;
+		color: rgb(var(--gray));
+		font-size: 0.95rem;
+	}
+</style>

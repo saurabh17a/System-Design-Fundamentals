@@ -1,5 +1,13 @@
 import { getCollection } from 'astro:content';
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+/** A topic tag or company, with a display label and a URL-safe slug. */
+export interface Tag {
+	label: string;
+	slug: string;
+}
+
 export interface DocEntry {
 	/** Lowercased path without extension, e.g. `hld/url-shortener`. */
 	id: string;
@@ -9,6 +17,18 @@ export interface DocEntry {
 	label: string;
 	/** SEO description derived from section + label. */
 	description: string;
+	/**
+	 * Difficulty levels parsed from the page's `> **Difficulty:** …` line.
+	 * A range like "Medium → Hard" yields `['medium','hard']`. Empty for
+	 * reference/guide pages (Deep Dives, Methodology) that aren't rated.
+	 */
+	difficulty: Difficulty[];
+	/** Topic tags — parsed from the `**Tags:**` line, or derived from the path. */
+	tags: Tag[];
+	/** Companies that ask this — parsed from the `**Companies …:**` line (problem docs only). */
+	companies: Tag[];
+	/** Page kind from a `**Type:**` line (e.g. "Core technology", "Guide"). */
+	type?: string;
 }
 
 export interface NavGroup {
@@ -38,6 +58,41 @@ const ACRONYMS = new Set([
 	'qps', 'rwlock', 'atm', 'srp', 'ocp', 'lsp', 'isp', 'dip',
 ]);
 
+/**
+ * Per-section presentation metadata (emoji + one-line blurb), keyed by the
+ * top-level directory key. Used by the home-page cards and the sidebar section
+ * headers so the two stay in sync.
+ */
+export const SECTION_META: Record<string, { emoji: string; blurb: string }> = {
+	methodology: {
+		emoji: '🧭',
+		blurb: 'How to think about system design — the interview framework, scoping and estimation, and what separates a good system from one that merely works.',
+	},
+	foundations: {
+		emoji: '🧱',
+		blurb: 'Programming in Python & Go, the four pillars of OOP, SOLID principles, and the core design patterns.',
+	},
+	lld: {
+		emoji: '🧩',
+		blurb: 'Object-oriented design problems — each classic worked in both Python and Go.',
+	},
+	machinecoding: {
+		emoji: '⚙️',
+		blurb: 'Data structures and concurrency primitives implemented from scratch.',
+	},
+	hld: {
+		emoji: '🏛️',
+		blurb: 'End-to-end, interview-grade system designs — from URL shorteners to payment systems.',
+	},
+	deepdives: {
+		emoji: '🔬',
+		blurb: 'The core technologies and distributed-systems concepts behind every design — Kafka, Redis, SQL, caching, consistency, sharding, resiliency, and more.',
+	},
+};
+
+/** Fallback presentation used for any section not listed in SECTION_META. */
+export const DEFAULT_SECTION_META = { emoji: '📄', blurb: '' };
+
 const DIR_LABELS: Record<string, string> = {
 	foundations: 'Foundations',
 	programming: 'Programming',
@@ -49,15 +104,114 @@ const DIR_LABELS: Record<string, string> = {
 	hld: 'High-Level Design',
 	lld: 'Low-Level Design',
 	machinecoding: 'Machine Coding',
+	methodology: 'Methodology',
+	deepdives: 'Deep Dives',
+	databases: 'Databases',
+	caching: 'Caching',
+	messaging: 'Messaging',
+	coordination: 'Coordination',
+	distribution: 'Distribution',
+	resiliency: 'Resiliency',
+	bigdata: 'Big Data',
+	search: 'Search',
+	networking: 'Networking',
+	infrastructure: 'Infrastructure & Ops',
 };
 
 // Display order for known directory/section keys (lower = earlier). Keys are unique
 // enough across nesting levels that one flat map suffices.
 const ORDER: Record<string, number> = {
-	foundations: 0, lld: 1, machinecoding: 2, hld: 3, // tiers (top level)
+	methodology: -1, foundations: 0, lld: 1, machinecoding: 2, hld: 3, deepdives: 4, // tiers (top level)
 	programming: 0, designpatterns: 2, roadmap: 3, // under Foundations (oop handled below)
 	python: 0, // languages: Python before Go
+	// Deep Dives subgroups (curriculum order)
+	databases: 0, caching: 1, messaging: 2, coordination: 3, distribution: 4,
+	resiliency: 5, bigdata: 6, search: 7, networking: 8, infrastructure: 9,
 };
+
+// Matches the house-style difficulty line, e.g. `> **Difficulty:** Medium → Hard`.
+const DIFFICULTY_RE = /^\s*>?\s*\*\*\s*Difficulty\s*:?\s*\*\*\s*(.+)$/im;
+
+/**
+ * Parse difficulty levels from a page body. A range ("Easy → Medium",
+ * "Medium → Hard") yields every level it spans. Returns [] when the page has
+ * no difficulty line (reference/guide pages).
+ */
+export function parseDifficulty(body?: string): Difficulty[] {
+	if (!body) return [];
+	const match = body.match(DIFFICULTY_RE);
+	if (!match) return [];
+	const text = match[1].toLowerCase();
+	const levels: Difficulty[] = [];
+	if (text.includes('easy')) levels.push('easy');
+	if (text.includes('medium')) levels.push('medium');
+	if (text.includes('hard')) levels.push('hard');
+	return levels;
+}
+
+/** URL-safe slug: lowercase, non-alphanumerics collapsed to single dashes. */
+export function slugify(s: string): string {
+	return s
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
+const TAGS_RE = /^\s*>?\s*\*\*\s*Tags\s*:?\s*\*\*\s*(.+)$/im;
+const COMPANIES_RE = /^\s*>?\s*\*\*\s*Companies(?:\s+that\s+ask\s+this)?\s*:?\s*\*\*\s*(.+)$/im;
+const TYPE_RE = /^\s*>?\s*\*\*\s*Type\s*:?\s*\*\*\s*(.+)$/im;
+
+function dedupeBySlug(tags: Tag[]): Tag[] {
+	const seen = new Set<string>();
+	return tags.filter((t) => t.slug && !seen.has(t.slug) && seen.add(t.slug));
+}
+
+/** Parse topic tags from a `**Tags:** \`[a]\` \`[b]\`` line into `[a]`, `[b]`. */
+function parseTags(body?: string): Tag[] {
+	const line = body?.match(TAGS_RE)?.[1];
+	if (!line) return [];
+	const tokens = [...line.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1].trim());
+	return dedupeBySlug(tokens.map((t) => ({ label: t.toLowerCase(), slug: slugify(t) })));
+}
+
+/**
+ * Parse the comma-separated companies line. Drops prose tokens ("every
+ * customer-facing product") and strips parentheticals ("Meta (FB)" → "Meta").
+ */
+function parseCompanies(body?: string): Tag[] {
+	const line = body?.match(COMPANIES_RE)?.[1];
+	if (!line) return [];
+	const parts = line
+		.split(',')
+		.map((p) => p.replace(/\(.*?\)/g, '').trim())
+		.filter(Boolean)
+		// Real company names start with an uppercase letter; drop generic prose.
+		.filter((p) => /^[A-Z0-9]/.test(p) && !/\b(every|interview|product|companies|teams?)\b/i.test(p));
+	return dedupeBySlug(parts.map((p) => ({ label: p, slug: slugify(p) })));
+}
+
+function parseType(body?: string): string | undefined {
+	const line = body?.match(TYPE_RE)?.[1];
+	return line ? line.replace(/[`*]/g, '').trim() : undefined;
+}
+
+// Path segments that make poor tags (too generic / language-track folders kept).
+const TAG_FROM_DIR: Record<string, string> = {
+	designpatterns: 'design-patterns',
+	machinecoding: 'machine-coding',
+	oop: 'oop',
+	solid: 'solid',
+};
+
+/**
+ * Fallback tags for pages without an explicit `**Tags:**` line (Methodology,
+ * Foundations): derive from the directory segments so every doc is tagged.
+ */
+function deriveTags(segments: string[]): Tag[] {
+	const dirs = segments.slice(0, -1); // drop the file segment
+	const labels = dirs.map((d) => TAG_FROM_DIR[d] ?? d).filter(Boolean);
+	return dedupeBySlug(labels.map((l) => ({ label: l.toLowerCase(), slug: slugify(l) })));
+}
 
 export function prettifyLabel(name: string): string {
 	const withoutNumber = name.replace(/^\d+[-_]/, '');
@@ -144,11 +298,16 @@ export async function getNav(): Promise<{ groups: NavGroup[]; ordered: DocEntry[
 		const file = segments[segments.length - 1];
 		const label = entry.data.title ?? prettifyLabel(file);
 		const section = segments.length > 1 ? prettifyDir(segments[0]) : 'Docs';
+		const explicitTags = parseTags(entry.body);
 		return {
 			id: entry.id,
 			segments,
 			label,
 			description: entry.data.description ?? `${label} — ${section}.`,
+			difficulty: parseDifficulty(entry.body),
+			tags: explicitTags.length ? explicitTags : deriveTags(segments),
+			companies: parseCompanies(entry.body),
+			type: parseType(entry.body),
 		};
 	});
 
@@ -167,4 +326,48 @@ export function groupContainsId(group: NavGroup, id: string): boolean {
 export function breadcrumbs(doc: DocEntry): string[] {
 	const dirs = doc.segments.slice(0, -1).map(prettifyDir);
 	return [...dirs, doc.label];
+}
+
+/** Site route for a topic-tag browse page, e.g. `/base/tags/caching/`. */
+export function tagHref(slug: string): string {
+	return `${withBase(`tags/${slug}`)}/`;
+}
+
+/** Site route for a company browse page, e.g. `/base/companies/uber/`. */
+export function companyHref(slug: string): string {
+	return `${withBase(`companies/${slug}`)}/`;
+}
+
+export interface TagGroup {
+	slug: string;
+	label: string;
+	docs: DocEntry[];
+}
+
+function buildIndex(pick: (d: DocEntry) => Tag[], docs: DocEntry[]): TagGroup[] {
+	const map = new Map<string, TagGroup>();
+	for (const doc of docs) {
+		for (const t of pick(doc)) {
+			let g = map.get(t.slug);
+			if (!g) map.set(t.slug, (g = { slug: t.slug, label: t.label, docs: [] }));
+			// Prefer the longest display label seen for this slug (most complete).
+			if (t.label.length > g.label.length) g.label = t.label;
+			g.docs.push(doc);
+		}
+	}
+	return [...map.values()].sort(
+		(a, b) => b.docs.length - a.docs.length || a.label.localeCompare(b.label),
+	);
+}
+
+/** All topic tags across the corpus, each with its docs, sorted by frequency. */
+export async function getTagIndex(): Promise<TagGroup[]> {
+	const { ordered } = await getNav();
+	return buildIndex((d) => d.tags, ordered);
+}
+
+/** All companies across the corpus, each with its docs, sorted by frequency. */
+export async function getCompanyIndex(): Promise<TagGroup[]> {
+	const { ordered } = await getNav();
+	return buildIndex((d) => d.companies, ordered);
 }

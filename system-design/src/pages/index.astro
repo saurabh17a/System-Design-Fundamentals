@@ -3,28 +3,11 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { docHref, getNav } from '../lib/docs';
+import { DEFAULT_SECTION_META, docHref, getNav, SECTION_META, withBase } from '../lib/docs';
 
 const { groups, ordered } = await getNav();
 
-const META: Record<string, { emoji: string; blurb: string }> = {
-	foundations: {
-		emoji: '🧱',
-		blurb: 'Programming in Python & Go, the four pillars of OOP, SOLID principles, and the core design patterns.',
-	},
-	lld: {
-		emoji: '🧩',
-		blurb: 'Object-oriented design problems — each classic worked in both Python and Go.',
-	},
-	machinecoding: {
-		emoji: '⚙️',
-		blurb: 'Data structures and concurrency primitives implemented from scratch.',
-	},
-	hld: {
-		emoji: '🏛️',
-		blurb: 'End-to-end, interview-grade system designs — from URL shorteners to payment systems.',
-	},
-};
+const countOf = (key: string) => ordered.filter((d) => d.segments[0] === key).length;
 
 const cards = groups.map((group) => {
 	const count = ordered.filter((d) => d.segments[0] === group.key).length;
@@ -36,12 +19,19 @@ const cards = groups.map((group) => {
 		count,
 		href: first ? docHref(first.id) : '#',
 		subAreas,
-		...(META[group.key] ?? { emoji: '📄', blurb: '' }),
+		...(SECTION_META[group.key] ?? DEFAULT_SECTION_META),
 	};
 });
 
-const startHref = cards[0]?.href ?? '#';
-const hldCard = cards.find((c) => c.key === 'hld');
+// Every "start / browse" entry point lands on the methodology intro.
+const startHref = docHref('methodology/01-what-is-system-design');
+
+const stats = [
+	{ n: countOf('hld'), label: 'System designs' },
+	{ n: countOf('deepdives'), label: 'Deep dives' },
+	{ n: countOf('lld'), label: 'LLD problems' },
+	{ n: countOf('machinecoding'), label: 'Machine coding' },
+];
 ---
 
 <!doctype html>
@@ -57,31 +47,45 @@ const hldCard = cards.find((c) => c.key === 'hld');
 				<h1>System Design,<br />from fundamentals to scale.</h1>
 				<p class="lead">{SITE_DESCRIPTION}</p>
 				<div class="cta">
-					<a class="btn primary" href={startHref}>Start with Foundations</a>
-					{hldCard && <a class="btn" href={hldCard.href}>Browse System Designs</a>}
+					<a class="btn primary" href={startHref}>Start here — What is system design?</a>
+					<a class="btn" href={withBase('tags')}>Browse by topic</a>
 				</div>
+				<ul class="stats">
+					{
+						stats.map((s) => (
+							<li>
+								<span class="num">{s.n}</span>
+								<span class="lbl">{s.label}</span>
+							</li>
+						))
+					}
+				</ul>
 			</section>
 
-			<section class="grid">
-				{
-					cards.map((card) => (
-						<a class="card" href={card.href}>
-							<div class="card-top">
-								<span class="emoji">{card.emoji}</span>
-								<span class="badge">{card.count}</span>
-							</div>
-							<h2>{card.label}</h2>
-							<p>{card.blurb}</p>
-							{card.subAreas.length > 0 && (
-								<ul class="tags">
-									{card.subAreas.map((s) => (
-										<li>{s}</li>
-									))}
-								</ul>
-							)}
-						</a>
-					))
-				}
+			<section class="section">
+				<h2 class="section-title">Explore the tracks</h2>
+				<div class="grid">
+					{
+						cards.map((card) => (
+							<a class="card" href={card.href}>
+								<div class="card-top">
+									<span class="emoji">{card.emoji}</span>
+									<span class="badge">{card.count}</span>
+								</div>
+								<h3>{card.label}</h3>
+								<p>{card.blurb}</p>
+								{card.subAreas.length > 0 && (
+									<ul class="tags">
+										{card.subAreas.slice(0, 6).map((s) => (
+											<li>{s}</li>
+										))}
+										{card.subAreas.length > 6 && <li class="more">+{card.subAreas.length - 6}</li>}
+									</ul>
+								)}
+							</a>
+						))
+					}
+				</div>
 			</section>
 		</main>
 		<Footer />
@@ -94,9 +98,26 @@ const hldCard = cards.find((c) => c.key === 'hld');
 		margin: 0 auto;
 		padding: 0 1.25rem 4rem;
 	}
+
+	/* ---- Hero ---- */
 	.hero {
-		padding: 4.5rem 0 3.5rem;
+		position: relative;
+		padding: 5rem 0 3rem;
 		text-align: center;
+	}
+	/* Soft radial glow behind the hero for depth. */
+	.hero::before {
+		content: '';
+		position: absolute;
+		inset: -20% -10% auto;
+		height: 420px;
+		background: radial-gradient(
+			60% 60% at 50% 0%,
+			color-mix(in srgb, var(--accent) 16%, transparent),
+			transparent 70%
+		);
+		z-index: -1;
+		pointer-events: none;
 	}
 	.eyebrow {
 		margin: 0 0 1rem;
@@ -138,10 +159,12 @@ const hldCard = cards.find((c) => c.key === 'hld');
 		background: var(--surface);
 		transition:
 			border-color 0.15s ease,
-			background 0.15s ease;
+			background 0.15s ease,
+			transform 0.15s ease;
 	}
 	.btn:hover {
 		border-color: var(--accent);
+		transform: translateY(-1px);
 	}
 	.btn.primary {
 		background: var(--accent);
@@ -152,6 +175,46 @@ const hldCard = cards.find((c) => c.key === 'hld');
 		background: var(--accent-dark);
 	}
 
+	/* ---- Stats strip ---- */
+	.stats {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 2.5rem;
+		list-style: none;
+		margin: 3rem 0 0;
+		padding: 1.5rem 0 0;
+		border-top: 1px solid rgb(var(--gray-light));
+	}
+	.stats li {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.stats .num {
+		font-size: 2rem;
+		font-weight: 800;
+		color: rgb(var(--black));
+		line-height: 1;
+	}
+	.stats .lbl {
+		margin-top: 0.35rem;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: rgb(var(--gray));
+	}
+
+	/* ---- Sections ---- */
+	.section {
+		margin-top: 3.5rem;
+	}
+	.section-title {
+		margin: 0 0 1.25rem;
+		font-size: 1.4rem;
+	}
+
+	/* ---- Track cards ---- */
 	.grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -192,7 +255,7 @@ const hldCard = cards.find((c) => c.key === 'hld');
 		padding: 0.15rem 0.6rem;
 		border-radius: 999px;
 	}
-	.card h2 {
+	.card h3 {
 		margin: 0 0 0.4rem;
 		font-size: 1.3rem;
 	}
@@ -216,5 +279,8 @@ const hldCard = cards.find((c) => c.key === 'hld');
 		background: rgba(var(--gray-light), 0.6);
 		padding: 0.2rem 0.55rem;
 		border-radius: 6px;
+	}
+	.tags .more {
+		color: rgb(var(--gray));
 	}
 </style>

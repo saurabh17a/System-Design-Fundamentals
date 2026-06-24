@@ -1,0 +1,191 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { getTagIndex, tagHref, withBase } from '../../lib/docs';
+
+const tags = await getTagIndex();
+const maxCount = Math.max(...tags.map((t) => t.docs.length), 1);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="Browse by topic · System Design" description="Browse all docs by topic tag." />
+	</head>
+	<body>
+		<Header />
+		<main class="browse-page">
+			<a class="back" href={withBase('')}>← Home</a>
+			<header class="head">
+				<p class="kicker">Browse</p>
+				<h1>Topics</h1>
+				<p class="sub">
+					{tags.length} topics across the knowledge base · or browse{' '}
+					<a href={withBase('companies')}>by company →</a>
+				</p>
+			</header>
+
+			<div class="toolbar">
+				<input
+					id="tag-filter"
+					type="search"
+					class="filter-input"
+					placeholder="Filter topics…"
+					autocomplete="off"
+					aria-label="Filter topics"
+				/>
+			</div>
+
+			<div class="cloud" id="tag-cloud">
+				{
+					tags.map((t) => {
+						const big = t.docs.length >= maxCount * 0.5;
+						return (
+							<a class={`chip${big ? ' big' : ''}`} href={tagHref(t.slug)} data-name={t.label}>
+								<span class="hash">#</span>
+								<span class="name">{t.label}</span>
+								<span class="count">{t.docs.length}</span>
+							</a>
+						);
+					})
+				}
+			</div>
+			<p class="no-match" id="no-match" hidden>No topics match.</p>
+		</main>
+		<Footer />
+
+		<script is:inline>
+			(() => {
+				const input = document.getElementById('tag-filter');
+				const chips = Array.from(document.querySelectorAll('#tag-cloud .chip'));
+				const noMatch = document.getElementById('no-match');
+				if (!input) return;
+				input.addEventListener('input', () => {
+					const q = input.value.trim().toLowerCase();
+					let shown = 0;
+					chips.forEach((c) => {
+						const hit = !q || (c.getAttribute('data-name') || '').toLowerCase().includes(q);
+						c.hidden = !hit;
+						if (hit) shown++;
+					});
+					if (noMatch) noMatch.hidden = shown > 0;
+				});
+			})();
+		</script>
+
+		<style>
+			.browse-page {
+				max-width: 860px;
+				margin: 0 auto;
+				padding: 2.5rem clamp(1rem, 4vw, 2rem) 5rem;
+			}
+			.back {
+				display: inline-block;
+				margin-bottom: 1.5rem;
+				font-size: 0.85rem;
+				color: rgb(var(--gray));
+				text-decoration: none;
+			}
+			.back:hover {
+				color: var(--accent);
+			}
+			.head {
+				margin-bottom: 1.75rem;
+			}
+			.kicker {
+				margin: 0 0 0.2rem;
+				font-size: 0.75rem;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+				color: var(--accent);
+			}
+			.head h1 {
+				margin: 0 0 0.4rem;
+				font-size: clamp(2rem, 5vw, 2.8rem);
+			}
+			.sub {
+				margin: 0;
+				color: rgb(var(--gray));
+				font-size: 0.95rem;
+			}
+			.sub a {
+				color: var(--accent);
+				text-decoration: none;
+				font-weight: 600;
+			}
+			.sub a:hover {
+				text-decoration: underline;
+			}
+			.toolbar {
+				margin-bottom: 1.5rem;
+			}
+			.filter-input {
+				width: 100%;
+				padding: 0.7rem 1rem;
+				font: inherit;
+				font-size: 0.95rem;
+				color: rgb(var(--black));
+				background: var(--surface);
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+			}
+			.filter-input:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+			.cloud {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.chip {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.3rem;
+				padding: 0.42rem 0.85rem;
+				border-radius: 999px;
+				font-size: 0.9rem;
+				font-weight: 600;
+				text-decoration: none;
+				color: rgb(var(--gray-dark));
+				background: rgba(var(--gray-light), 0.45);
+				border: 1px solid transparent;
+				transition:
+					border-color 0.14s ease,
+					color 0.14s ease,
+					transform 0.14s ease;
+			}
+			.chip:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+				transform: translateY(-1px);
+			}
+			/* Frequently-used topics read a touch stronger. */
+			.chip.big {
+				background: color-mix(in srgb, var(--accent) 12%, transparent);
+				color: var(--accent);
+			}
+			.chip .hash {
+				color: rgb(var(--gray));
+			}
+			.chip.big .hash {
+				color: var(--accent);
+				opacity: 0.7;
+			}
+			.chip .count {
+				font-size: 0.72rem;
+				font-weight: 700;
+				color: rgb(var(--gray));
+				background: rgba(var(--gray-light), 0.7);
+				padding: 0.05rem 0.4rem;
+				border-radius: 999px;
+			}
+			.no-match {
+				margin-top: 1.5rem;
+				color: rgb(var(--gray));
+			}
+		</style>
+	</body>
+</html>
