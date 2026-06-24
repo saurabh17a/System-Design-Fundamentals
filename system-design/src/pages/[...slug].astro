@@ -24,9 +24,10 @@ const pos = ordered.indexOf(doc);
 const prevDoc = pos > 0 ? ordered[pos - 1] : null;
 const nextDoc = pos < ordered.length - 1 ? ordered[pos + 1] : null;
 
-// Page title: prefer the doc's first H1, else the derived label.
-const h1 = headings.find((h) => h.depth === 1);
-const title = h1?.text ?? doc.label;
+// The H1 is stripped from the rendered body (see strip-doc-meta plugin) and
+// re-rendered as the page title by the layout — so read it from the raw source.
+const rawH1 = entry.body?.match(/^#\s+(.+?)\s*$/m)?.[1];
+const title = rawH1 ?? doc.label;
 
 const crumbLabels = breadcrumbs(doc); // [...sections, pageLabel]
 const crumbs = crumbLabels.slice(0, -1).map((label) => ({ label }));
@@ -40,6 +41,7 @@ const crumbs = crumbLabels.slice(0, -1).map((label) => ({ label }));
 	crumbs={crumbs}
 	prev={prevDoc ? { label: prevDoc.label, href: docHref(prevDoc.id) } : null}
 	next={nextDoc ? { label: nextDoc.label, href: docHref(nextDoc.id) } : null}
+	meta={{ difficulty: doc.difficulty, tags: doc.tags, companies: doc.companies, type: doc.type }}
 >
 	<Content />
 </DocLayout>

@@ -29,6 +29,8 @@ const home = withBase('');
 			<span class="brand-mark">SD</span>
 			<span class="brand-text">{SITE_TITLE}</span>
 		</a>
+		<a class="navlink" href={withBase('tags')}>Topics</a>
+		<a class="navlink" href={withBase('companies')}>Companies</a>
 		<div class="spacer"></div>
 		<Search />
 		<button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark mode">
@@ -93,6 +95,15 @@ const home = withBase('');
 		font-weight: 800;
 		letter-spacing: 0.02em;
 	}
+	.navlink {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: rgb(var(--gray-dark));
+		text-decoration: none;
+	}
+	.navlink:hover {
+		color: var(--accent);
+	}
 	.spacer {
 		flex: 1;
 	}
@@ -144,6 +155,9 @@ const home = withBase('');
 			display: inline-flex;
 		}
 		.brand-text {
+			display: none;
+		}
+		.navlink {
 			display: none;
 		}
 		.spacer {

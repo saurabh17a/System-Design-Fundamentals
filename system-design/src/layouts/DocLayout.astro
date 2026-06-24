@@ -1,10 +1,12 @@
 ---
 import type { MarkdownHeading } from 'astro';
 import BaseHead from '../components/BaseHead.astro';
+import DocMeta from '../components/DocMeta.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Toc from '../components/Toc.astro';
+import type { Difficulty, Tag } from '../lib/docs';
 import { withBase } from '../lib/docs';
 
 interface Crumb {
@@ -17,6 +19,13 @@ interface PagerLink {
 	href: string;
 }
 
+interface DocMetaProps {
+	difficulty: Difficulty[];
+	tags: Tag[];
+	companies: Tag[];
+	type?: string;
+}
+
 interface Props {
 	title: string;
 	description: string;
@@ -25,9 +34,10 @@ interface Props {
 	crumbs: Crumb[];
 	prev?: PagerLink | null;
 	next?: PagerLink | null;
+	meta?: DocMetaProps;
 }
 
-const { title, description, currentId, headings, crumbs, prev, next } = Astro.props;
+const { title, description, currentId, headings, crumbs, prev, next, meta } = Astro.props;
 const base = withBase('');
 ---
 
@@ -53,6 +63,17 @@ const base = withBase('');
 					}
 				</nav>
 				<article class="prose" data-pagefind-body>
+					<h1 class="doc-title">{title}</h1>
+					{
+						meta && (
+							<DocMeta
+								difficulty={meta.difficulty}
+								tags={meta.tags}
+								companies={meta.companies}
+								type={meta.type}
+							/>
+						)
+					}
 					<slot />
 				</article>
 				<nav class="pager" aria-label="Previous and next">
@@ -96,6 +117,9 @@ const base = withBase('');
 	}
 	.prose {
 		max-width: 820px;
+	}
+	.doc-title {
+		margin-bottom: 1rem;
 	}
 	.breadcrumb {
 		max-width: 820px;

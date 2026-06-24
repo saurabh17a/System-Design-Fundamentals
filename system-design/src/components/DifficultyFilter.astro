@@ -1,0 +1,139 @@
+---
+// A client-side difficulty filter for browse pages. It hides `.doc-item`
+// elements (rendered by BrowseList) whose difficulty doesn't match the active
+// levels. Unrated items always show. State persists across browse pages.
+---
+
+<div class="difficulty-filter" id="difficulty-filter" aria-label="Filter by difficulty">
+	<span class="df-label">Difficulty</span>
+	<div class="df-chips">
+		<button type="button" class="df-chip easy" data-level="easy" aria-pressed="true">Easy</button>
+		<button type="button" class="df-chip medium" data-level="medium" aria-pressed="true">Medium</button>
+		<button type="button" class="df-chip hard" data-level="hard" aria-pressed="true">Hard</button>
+	</div>
+	<span class="df-count" id="df-count"></span>
+</div>
+
+<script is:inline>
+	(() => {
+		const LEVELS = ['easy', 'medium', 'hard'];
+		const KEY = 'browseDifficulty';
+		const root = document.getElementById('difficulty-filter');
+		if (!root) return;
+		const chips = Array.from(root.querySelectorAll('.df-chip'));
+		const countEl = document.getElementById('df-count');
+
+		const load = () => {
+			try {
+				const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+				if (Array.isArray(saved)) return new Set(saved.filter((l) => LEVELS.includes(l)));
+			} catch (_) {}
+			return new Set(LEVELS);
+		};
+		let active = load();
+
+		const apply = () => {
+			const items = document.querySelectorAll('.doc-item');
+			let shown = 0;
+			items.forEach((li) => {
+				const raw = li.getAttribute('data-difficulty');
+				if (!raw) {
+					li.hidden = false; // unrated always visible
+					shown++;
+					return;
+				}
+				const hide = !raw.split(' ').some((l) => active.has(l));
+				li.hidden = hide;
+				if (!hide) shown++;
+			});
+			chips.forEach((c) => c.setAttribute('aria-pressed', String(active.has(c.dataset.level))));
+			const empty = document.getElementById('browse-empty');
+			if (empty) empty.hidden = shown > 0;
+			if (countEl) {
+				const filtered = active.size < LEVELS.length;
+				countEl.textContent = filtered ? `${shown} of ${items.length} shown` : '';
+			}
+		};
+
+		chips.forEach((chip) => {
+			chip.addEventListener('click', () => {
+				const lvl = chip.dataset.level;
+				if (active.has(lvl)) active.delete(lvl);
+				else active.add(lvl);
+				localStorage.setItem(KEY, JSON.stringify([...active]));
+				apply();
+			});
+		});
+
+		apply();
+	})();
+</script>
+
+<style>
+	.difficulty-filter {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin: 0 0 1.5rem;
+	}
+	.df-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: rgb(var(--gray));
+	}
+	.df-chips {
+		display: flex;
+		gap: 0.35rem;
+	}
+	.df-chip {
+		padding: 0.3rem 0.85rem;
+		border-radius: 999px;
+		border: 1px solid rgb(var(--gray-light));
+		background: transparent;
+		color: rgb(var(--gray));
+		font: inherit;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.12s ease;
+	}
+	.df-chip:hover {
+		border-color: rgb(var(--gray));
+	}
+	.df-chip.easy[aria-pressed='true'] {
+		background: rgba(22, 163, 74, 0.14);
+		border-color: rgba(22, 163, 74, 0.55);
+		color: rgb(21, 128, 61);
+	}
+	.df-chip.medium[aria-pressed='true'] {
+		background: rgba(217, 119, 6, 0.15);
+		border-color: rgba(217, 119, 6, 0.55);
+		color: rgb(180, 83, 9);
+	}
+	.df-chip.hard[aria-pressed='true'] {
+		background: rgba(220, 38, 38, 0.14);
+		border-color: rgba(220, 38, 38, 0.55);
+		color: rgb(185, 28, 28);
+	}
+	.df-chip[aria-pressed='false'] {
+		opacity: 0.5;
+		text-decoration: line-through;
+	}
+	.df-count {
+		font-size: 0.8rem;
+		color: rgb(var(--gray));
+		margin-left: 0.25rem;
+	}
+	:global(html.dark) .df-chip.easy[aria-pressed='true'] {
+		color: rgb(134, 239, 172);
+	}
+	:global(html.dark) .df-chip.medium[aria-pressed='true'] {
+		color: rgb(252, 211, 77);
+	}
+	:global(html.dark) .df-chip.hard[aria-pressed='true'] {
+		color: rgb(252, 165, 165);
+	}
+</style>

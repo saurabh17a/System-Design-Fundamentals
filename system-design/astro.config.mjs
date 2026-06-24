@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
 import { rewriteMdLinks } from './src/plugins/rewrite-md-links.mjs';
+import { stripDocMeta } from './src/plugins/strip-doc-meta.mjs';
 
 // GitHub Pages project site. `base` must match the repo name.
 const base = '/System-Design-Fundamentals';
@@ -17,6 +18,9 @@ export default defineConfig({
 	markdown: {
 		// Dual themes — activated by the `html.dark` class (see global.css).
 		shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' }, wrap: false },
+		// Strip the legacy text meta header (H1 + meta blockquote + rule) so it can
+		// be re-rendered as a styled component (DocMeta.astro).
+		remarkPlugins: [stripDocMeta],
 		// Rewrite relative `*.md` cross-links in the knowledge base to site routes.
 		rehypePlugins: [[rewriteMdLinks, { base }]],
 	},
