@@ -2,6 +2,8 @@
 
 A learning + reference library for students, junior engineers, and interview prep.
 
+🌐 **Live site:** [saurabh17a.github.io/System-Design-Fundamentals](https://saurabh17a.github.io/System-Design-Fundamentals/)
+
 > **Who is this for?**
 > - **CS students** (undergrad/bootcamp) building foundations.
 > - **Junior engineers** leveling up to mid/senior roles.
@@ -14,9 +16,16 @@ You don't need a CS degree to use this. Topics start from "what is a variable?" 
 
 ## How the bank is organized
 
-We use **3 tiers**. Pick where you are; move up.
+We use **tiers**. Pick where you are; move up.
 
 ```
+┌────────────────────────────────────────────────────────────┐
+│                  Tier 0: METHODOLOGY                        │
+│  What system design is, and how to approach a problem.      │
+│  → Read this first if you've never done a design round.     │
+└────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
 ┌────────────────────────────────────────────────────────────┐
 │                  Tier 1: FOUNDATIONS                        │
 │  Programming basics in Python and Go.                       │
@@ -38,44 +47,69 @@ We use **3 tiers**. Pick where you are; move up.
 │  High-Level Design (HLD): Twitter, Uber, WhatsApp, etc.     │
 │  → Read this when prepping for interviews or work.          │
 └────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────────┐
+│                  Tier 4: DEEP DIVES                         │
+│  Databases, Caching, Messaging, Networking, Resiliency...   │
+│  → Reference for the building blocks HLD answers reach for. │
+└────────────────────────────────────────────────────────────┘
 ```
+
+> The whole bank is also published as a searchable, dark-mode-friendly website:
+> **[saurabh17a.github.io/System-Design-Fundamentals](https://saurabh17a.github.io/System-Design-Fundamentals/)** — browse by tag or company, or use full-text search.
 
 ---
 
 ## Directory layout
 
+All content lives as Markdown under `system-design/src/content/docs/`. The
+`system-design/` folder is an [Astro](https://astro.build) project that renders
+those docs into the website.
+
 ```
-kb/
+SystemDesign/
 ├── README.md                         ← you are here
-├── Foundations/
-│   ├── Roadmap.md                    ← suggested learning paths
-│   ├── Programming/
-│   │   ├── Python/                   ← 8 beginner-friendly Python docs
-│   │   └── Go/                       ← 8 beginner-friendly Go docs
-│   ├── OOP/
-│   │   ├── four-pillars.md           ← Encapsulation, Abstraction, etc.
-│   │   └── SOLID/                    ← 5 principles, 1 doc each
-│   └── DesignPatterns/               ← 8 core patterns in Py + Go
-├── HLD/                              ← system design (Twitter, Uber, etc.)
-├── LLD/                              ← OOP design (parking lot, chess, etc.)
-│   ├── Python/                       ← LLD answers in Python
-│   └── Go/                           ← same, in Go
-├── MachineCoding/                    ← data-structure / concurrency code
-│   ├── Python/
-│   └── Go/
 ├── _template/                        ← skeletons for new docs
-└── INDEX.md                          ← searchable list of every doc
+└── system-design/                    ← the Astro site
+    ├── astro.config.mjs
+    ├── package.json
+    └── src/
+        ├── content/docs/             ← every knowledge-base doc (~210)
+        │   ├── Methodology/          ← how to approach a design problem
+        │   ├── Foundations/
+        │   │   ├── Roadmap.md        ← suggested learning paths
+        │   │   ├── Programming/
+        │   │   │   ├── Python/       ← 10 beginner-friendly Python docs
+        │   │   │   └── Go/           ← beginner-friendly Go docs
+        │   │   ├── OOP/              ← four pillars + SOLID
+        │   │   └── DesignPatterns/   ← core patterns (factory, strategy, ...)
+        │   ├── HLD/                  ← system design (Twitter, Uber, etc.)
+        │   ├── LLD/                  ← OOP design (parking lot, chess, etc.)
+        │   │   ├── Python/           ← LLD answers in Python
+        │   │   └── Go/               ← same, in Go
+        │   ├── MachineCoding/        ← data-structure / concurrency code
+        │   │   ├── Python/
+        │   │   └── Go/
+        │   └── DeepDives/            ← building blocks, grouped by topic
+        │       ├── Databases/  Caching/  Messaging/  Networking/
+        │       ├── Distribution/  Coordination/  Resiliency/
+        │       └── Infrastructure/  Search/  BigData/
+        ├── components/  layouts/  pages/   ← site UI (tags, companies, search)
+        └── styles/
 ```
 
 ---
 
 ## Recommended learning paths
 
+Paths below are relative to `system-design/src/content/docs/`.
+
 ### Path A — "I'm starting from scratch" (3-6 months)
 
 ```
 1. Foundations/Programming/Python/01-getting-started.md
-   ↓ work through 01–08 in order
+   ↓ work through 01–10 in order
 2. Foundations/OOP/four-pillars.md
 3. Foundations/DesignPatterns/strategy.md   ← start with simplest pattern
    ↓ then a few more patterns
@@ -88,7 +122,7 @@ kb/
 
 If you know Python and want Go:
 ```
-Foundations/Programming/Go/* (read all 8 in order)
+Foundations/Programming/Go/* (read all 12 in order)
 LLD/Go/parking-lot.md      (compare with Python version)
 ```
 
@@ -108,13 +142,14 @@ Week 12:   HLD harder: Uber, Dropbox, Payment System
 
 Skip Tier 1 entirely.
 ```
-Foundations/OOP/four-pillars.md      (10-min refresher)
+Methodology/02-how-to-approach.md     (the interview framework)
+Foundations/OOP/four-pillars.md       (10-min refresher)
 Foundations/DesignPatterns/*          (skim)
 HLD/url-shortener.md                  (canonical first HLD)
 HLD/rate-limiter.md
 HLD/twitter-news-feed.md
 HLD/distributed-cache.md
-   ↓ pick whichever interests you next
+   ↓ then pull in DeepDives/ topics as each HLD needs them
 ```
 
 See `Foundations/Roadmap.md` for more detail.
@@ -134,6 +169,30 @@ Most docs follow this shape:
 7. **What to read next** — pointer onward.
 
 The deeper docs (HLD especially) are denser. If a doc feels too hard, drop one tier.
+
+---
+
+## Running the site locally
+
+The website is an Astro project in `system-design/`. You need Node 18+ (CI builds
+on Node 22).
+
+```bash
+cd system-design
+npm install
+npm run dev        # local dev server at http://localhost:4321
+```
+
+Other commands:
+
+| Command           | Action                                          |
+| :---------------- | :---------------------------------------------- |
+| `npm run build`   | Build the static site to `dist/` (+ search index) |
+| `npm run preview` | Preview the production build locally            |
+
+The site auto-deploys to GitHub Pages from `master` via `.github/workflows/deploy.yml`.
+To add or edit content, drop a Markdown file into `system-design/src/content/docs/`
+— it shows up as a route automatically.
 
 ---
 
@@ -173,10 +232,12 @@ go run my_example.go
 
 ## How this knowledge base will grow
 
-Today: 130+ docs.
+Today: 210+ docs across Methodology, Foundations, LLD, Machine Coding, HLD, and Deep Dives.
 Coming: video walkthroughs, exercises with auto-grading, interview mock environment.
 
-If you spot a typo, want a new topic added, or have a question — `INDEX.md` lists every doc; if your topic isn't there, request it.
+If you spot a typo, want a new topic added, or have a question — browse the
+[live site](https://saurabh17a.github.io/System-Design-Fundamentals/) or the docs
+under `system-design/src/content/docs/`; if your topic isn't there, request it.
 
 ---
 
